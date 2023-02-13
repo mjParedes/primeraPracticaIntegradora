@@ -5,7 +5,9 @@ import handlebars from 'express-handlebars'
 import productsRouter from './routes/products.router.js'
 import cartsRouter from './routes/carts.router.js'
 import messagesRouter from './routes/messages.router.js'
+import { messagesModel } from './dao/models/messages.model.js';
 import './dbConfig.js'
+
 
 
 const app = express()
@@ -45,22 +47,54 @@ const httpServer = app.listen(PORT, () => {
 
 const socketServer = new Server(httpServer)
 
+socketServer.on('connection',(socket) =>{
+    console.log(`Usuario conectado: ${socket.id}`)
 
-socketServer.on('connection', (socket) => {
-    console.log(`Usuario conectado`)
-
-    socket.on('disconnect', () => {
-        console.log(`Usuario desconectado`)
+    socket.on('disconnect',() =>{
+        console.log('Usuario desconectado')
     })
 
-    socket.emit('saludo','Bienvenido a tu primer websocket')
+    socket.on('mensaje',info=>{
+        mensajes.push(info)
+        socketServer.emit('chat',mensajes)
+        async function addMsg(){
+            try {
+                const newMsg= await messagesModel.create(info)
+                return newMsg
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        addMsg()
+        console.log(info)
+    })
 
-    socket.on('mensaje1',(obj)=>{
-      mensajes.push(obj)
-      console.log(mensajes)
-      socketServer.emit('respuesta1',mensajes)
+    socket.on('nuevoUsuario',usuario =>{
+        socket.broadcast.emit('broadcast',usuario)
     })
 })
+
+
+
+
+
+
+
+// socketServer.on('connection', (socket) => {
+//     console.log(`Usuario conectado`)
+
+//     socket.on('disconnect', () => {
+//         console.log(`Usuario desconectado`)
+//     })
+
+//     socket.emit('saludo','Bienvenido a tu primer websocket')
+
+//     socket.on('mensaje1',(obj)=>{
+//       mensajes.push(obj)
+//       console.log(mensajes)
+//       socketServer.emit('respuesta1',mensajes)
+//     })
+// })
 
 
 
